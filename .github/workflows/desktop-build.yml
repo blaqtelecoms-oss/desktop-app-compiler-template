@@ -1,0 +1,40 @@
+name: Build Cross-Platform Desktop Apps
+
+on:
+  repository_dispatch:
+    types: [build_desktop_app]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Inject User Website Link
+        run: |
+          echo '{"url": "${{ github.event.client_payload.target_url }}"}' > config.json
+
+      - name: Build Desktop Binaries (Electron Builder)
+        uses: samuelmeuli/action-electron-builder@v5
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release: false
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }}
+          path: dist/
